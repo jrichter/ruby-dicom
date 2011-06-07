@@ -271,6 +271,26 @@ module DICOM
       return @data_results
     end
 
+    # Modality Worklist Information Model - FIND - SOP Class Name
+    # 1.2.840.10008.5.1.4.31 - SOP Class UID
+    def find_worklist(query_params={})
+      # Modality Worklist Information Model - FIND:
+      set_default_presentation_context("1.2.840.10008.5.1.4.31")
+      # Every query attribute with a value != nil (required) will be sent in the dicom query.
+      # The query parameters with nil-value (optional) are left out unless specified.
+      default_query_params = {
+
+      }
+      # Raising an error if a non-tag query attribute is used:
+      query_params.keys.each do |tag|
+        raise ArgumentError, "The supplied tag (#{tag}) is not valid. It must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
+      end
+      # Set up the query parameters and carry out the C-FIND:
+      set_data_elements(default_query_params.merge(query_params))
+      perform_find
+      return @data_results
+    end
+    
     # Retrieves a DICOM file from a service class provider (SCP/PACS).
     #
     # === Restrictions
