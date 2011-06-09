@@ -262,7 +262,12 @@ module DICOM
         @outgoing.add_last(@outgoing.encode_tag(element[0]))
         # Encode the value in advance of putting it into the message, so we know its length:
         vr = LIBRARY.get_name_vr(element[0])[1]
-        value = @outgoing.encode_value(element[1], vr)
+        # Check for nested hashes
+        if element[1].is_a?(Hash)
+          value = encode_nested(element[1])
+        else
+          value = @outgoing.encode_value(element[1], vr)          
+        end
         if @explicit
           # Type (VR) (2 bytes)
           @outgoing.encode_last(vr, "STR")
@@ -288,6 +293,47 @@ module DICOM
       @outgoing.encode_first(@outgoing.string.length, "UL")
       # PRESENTATION DATA VALUE (the above)
       append_header(PDU_DATA)
+    end
+    
+    # Encodes nested hashes and returns the binary data to include with the original tag
+    # for more encoding
+    # FIXME Need to add Group Length to each section of a tags like tags 0008 and 0040 and such
+    def encode_nested(element)
+      results = ""
+      if element.is_a?(Hash)
+        # The key is the tag, and the value is the data
+        element.keys.each do |key|
+          # FIXME Sort the keys and put group tag + length in string before each group
+          # Check for more nesting
+          if element[key].is_a?(Hash)
+            # Use recursion to handle multiple levels of nesting
+            results = results + encode_nested(element[key])
+          else
+            # encode the key and the value and add it to the results string
+            vr = LIBRARY.get_name_vr(key)[1]
+            tag = @outgoing.encode_tag(key)
+            results = results + tag
+            value = @outgoing.encode_value(element[key],vr)
+            if @explicit
+              # Type (VR) (2 bytes)
+              results = results + @outgoing.encode(vr, "STR")
+              # Length (2 bytes)
+              results = results + @outgoing.encode(value.length, "US")
+            else
+              # Implicit:
+              # Length (4 bytes)
+              results = results + @outgoing.encode(value.length, "UL")
+            end
+            # Value (variable length)
+             results = results + value
+          end
+        end
+        # FIXME does this need Implicit/Explicit 
+        results = @outgoing.encode_tag("FFFE,E000") + @outgoing.encode(results.length, "UL") + results
+        return results        
+      else
+        return element
+      end
     end
 
     # Builds the binary string which is sent as the release request.

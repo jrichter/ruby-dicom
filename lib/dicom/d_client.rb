@@ -278,8 +278,17 @@ module DICOM
       set_default_presentation_context("1.2.840.10008.5.1.4.31")
       # Every query attribute with a value != nil (required) will be sent in the dicom query.
       # The query parameters with nil-value (optional) are left out unless specified.
+      # FIXME The query is malformed in link.rb now - Some options are
+      # commented out below because of this.  
       default_query_params = {
-
+        "0040,0100" => {
+          "0040,0001" => "", # Scheduled Station AE Title
+          "0040,0002" => Time.now.strftime('%Y%m%d'), # Scheduled Procedure Step Start Date Assume Today
+          "0040,0003" => "", # Scheduled Procedure Step Start Time
+         # "0040,0006" => "", # Scheduled Performing Physician's Name
+         # "0040,0007" => "", # Scheduled Procedure Step Description
+          "0008,0060" => ""  # Modality
+        }
       }
       # Raising an error if a non-tag query attribute is used:
       query_params.keys.each do |tag|

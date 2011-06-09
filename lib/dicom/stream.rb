@@ -69,9 +69,10 @@ module DICOM
     #
     # * <tt>length</tt> -- Fixnum. The string length which will be decoded.
     # * <tt>type</tt> -- String. The type (vr) of data to decode.
-    #
+    # FIXME If the length is a Bignum it all blows up when querying a MWL
+    # I added Bignum to the exception below for now
     def decode(length, type)
-      raise ArgumentError, "Invalid argument length. Expected Fixnum, got #{length.class}" unless length.is_a?(Fixnum)
+      raise ArgumentError, "Invalid argument length. Expected Fixnum, got #{length.class}" unless length.is_a?(Bignum) or length.is_a?(Fixnum)
       raise ArgumentError, "Invalid argument type. Expected string, got #{type.class}" unless type.is_a?(String)
       # Check if values are valid:
       if (@index + length) > @string.length
